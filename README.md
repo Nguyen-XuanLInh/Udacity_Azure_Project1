@@ -21,26 +21,31 @@ We will need to:
 1. Create an Packer image.
 2. Create infrastructure with Terraform template.
 
-Packer Image
-
-Terraform Template
-1. Configure environment
-  - Azure Subcription:
-  - Configure Terraform
-  - Create SSH key pair
-2. Implement code
-  - Create a file main.tf
-  - Create a file vars.tf to contain the variables
-  
-3. Initialize Terraform deployent
-  - Run: terraform init 
-4. Terraform execution plan
-  - Terraform plan command creates execution plan but NOT execute
-  - Run: terraform plan - out solution.plan
-  The -out parameter allows speify an out put file and revie the plan.
-5. Apply a Terraform plan
+#### Packer Image
+Run command to create packer image
+``` packer build server.json ```
+#### Terraform Template
+1. Implement code
+  - Create a file ```main.tf``` to create
+  - Create a file ```vars.tf``` to contain the variables
+2. Initialize Terraform deployment
+  - Run: ``` terraform init ``` to start
+3. Terraform execution plan
+  - Terraform plan command creates plan
+  - Run: ```terraform plan -out solution.plan ```
+  The -out parameter allows specifying of the output file and review of the plan
+4. Apply a Terraform plan
   - Terraform apply command to execute plan to infrastructure
-  - Run: terraform apply solution.plan
+  - Run: ```terraform apply solution.plan```
+#### How to customize vars.tf
+Ex: If you want to deploy on other servers, you need to change values default in vars.tf file
+```
+  variable "server_names"{
+  type = list
+  default = ["<Server_1>","Server_2"]
+}
+```
 ### Output
 Terraform will perform:
+![terraform plan out](./Image/terraform_plan_out.png)
 
