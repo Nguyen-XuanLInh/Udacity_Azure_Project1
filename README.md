@@ -47,5 +47,5 @@ Ex: If you want to deploy on other servers, you need to change values default in
 ```
 ### Output
 Terraform will perform:
-![terraform plan out](./Image/terraform_plan_out.png)
+![terraform out put](./Image/output.png)
 
