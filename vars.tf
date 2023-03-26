@@ -3,9 +3,14 @@ variable "prefix" {
   default = "udacity"
 }
 
-variable "Environment"{
+variable "environment"{
   description = "environment"
   default = "test"
+}
+
+variable "resourceGroup" {
+  description = "Name of resource"
+  default     = "Azuredevops"
 }
 
 variable "location" {
@@ -27,9 +32,9 @@ variable "server_names"{
 }
 
 variable "packerImageId"{
-  default = "/subscriptions/c9f1e8cb-24a3-405b-9046-bf2b34125d0c/resourceGroups/AZUREDEVOPS/providers/Microsoft.Compute/images/myPackerImage"
+  default = "e7a256dc-769a-421c-9f8e-e283ed3cbefa"
 }
 
-variable "vm_count"{
+variable "vmCount"{
   default = "2"
 }

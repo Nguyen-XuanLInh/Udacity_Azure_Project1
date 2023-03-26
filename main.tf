@@ -2,17 +2,12 @@ provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "main" {
-  name     = "${var.prefix}-rg"
-  location = var.location
-}
-
 # 1 Create Virtual Network
 resource "azurerm_virtual_network" "main" {
   name                = "${var.prefix}-network"
   address_space       = ["10.0.0.0/22"]
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resourceGroup
 
   tags = {
     Name = "tagging-policy"
@@ -22,7 +17,7 @@ resource "azurerm_virtual_network" "main" {
 # 2 Create Subet
 resource "azurerm_subnet" "main" {
   name                 = "${var.prefix}-subnet"
-  resource_group_name  = azurerm_resource_group.main.name
+  resource_group_name  = var.resourceGroup
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = ["10.0.2.0/24"]
 }
@@ -30,8 +25,8 @@ resource "azurerm_subnet" "main" {
 # 3 Create Network Security, Security Group, Security Rule
 resource "azurerm_network_security_group" "main" {
   name                = "${var.prefix}-security-group"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resourceGroup
 
   security_rule {
     name                       = "SSH"
@@ -63,13 +58,14 @@ resource "azurerm_network_security_group" "main" {
 
 # 4 Create Network Interface
 resource "azurerm_network_interface" "main" {
-  name                = "${var.prefix}-network_interface"
-  resource_group_name = azurerm_resource_group.main.name
-  location            = azurerm_resource_group.main.location
+  name                = "${var.prefix}-network_interface-${var.server_names[count.index]}"
+  resource_group_name = var.resourceGroup
+  location            = var.location
+  count               = var.vmCount
 
   ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.internal.id
+    name                          = "main"
+    subnet_id                     = azurerm_subnet.main.id
     private_ip_address_allocation = "Dynamic"
   }
 
@@ -81,8 +77,8 @@ resource "azurerm_network_interface" "main" {
 # 5 Create Public IP
 resource "azurerm_public_ip" "main" {
   name                = "${var.prefix}-public-ip"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resourceGroup
   allocation_method   = "Static"
 
   tags = {
@@ -93,8 +89,8 @@ resource "azurerm_public_ip" "main" {
 # 6 Create Load Balancer
 resource "azurerm_lb" "main" {
   name                = "${var.prefix}-load-balancer"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  resource_group_name = var.resourceGroup
 
   frontend_ip_configuration {
     name                 = "${var.prefix}-frontend-ip"
@@ -108,7 +104,7 @@ resource "azurerm_lb" "main" {
 
 # 7 Create Load Balancer Rules
 resource "azurerm_lb_rule" "main" {
-  loadbalancer_id                = azurerm_lb.myLB.id
+  loadbalancer_id                = azurerm_lb.main.id
   name                           = "${var.prefix}-load-balancer-rule"
   protocol                       = "Tcp"
   frontend_port                  = 8080
@@ -133,26 +129,23 @@ resource "azurerm_subnet_network_security_group_association" "main" {
 }
 
 resource "azurerm_network_interface_backend_address_pool_association" "main" {
-  count                   = var.vm_count
-  network_interface_id    = element(azurerm_network_interface.myNI.*.id, count.index)
-  ip_configuration_name   = "internal"
+  count                   = var.vmCount
+  network_interface_id    = element(azurerm_network_interface.main.*.id, count.index)
+  ip_configuration_name   = "main"
   backend_address_pool_id = azurerm_lb_backend_address_pool.main.id
 }
 
 resource "azurerm_linux_virtual_machine" "main" {
-  name                            = "${var.prefix}-vm"
-  resource_group_name             = azurerm_resource_group.main.name
-  location                        = azurerm_resource_group.main.location
+  count                           = var.vmCount
+  name                            = "${var.prefix}-vm-${var.server_names[count.index]}"
+  resource_group_name             = var.resourceGroup
+  location                        = var.location
   size                            = "Standard_D2s_v3"
   admin_username                  = "${var.username}"
   admin_password                  = "${var.password}"
-  network_interface_ids           = [element(azurerm_network_interface.myNI.*.id, count.index)]
   disable_password_authentication = false
-  source_image_id                 = var.packerImageId
-  network_interface_ids = [
-    azurerm_network_interface.main.id,
-  ]
-
+  network_interface_ids           = [element(azurerm_network_interface.main.*.id, count.index)]
+  
   source_image_reference {
     publisher = "Canonical"
     offer     = "UbuntuServer"
